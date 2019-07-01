@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string>
 
 int
 main(int argc, char *argv[])
@@ -88,6 +89,11 @@ main(int argc, char *argv[])
 	}
 
 	while (1) {
+		std::string code;
+		sockaddr* p_sockadr;
+		socklen_t p_socklength = sizeof(struct sockaddr_in6);
+
+		/*
 		if (flag) {
 			rc = select(sd + 1, &fds, NULL, NULL, &tv);
 			if (!rc) {
@@ -95,10 +101,11 @@ main(int argc, char *argv[])
 			}
 			tv.tv_sec  = 10;
 			tv.tv_usec = 0;
-		}
-		len = read(sd, buf, 1400);
+		} */
+		//len = read(sd, buf, 1400);
+		len = recvfrom(sd, buf, 1400, 0, p_sockadr, &p_socklength);
 		buf[len] = '\0';
-		/* printf("Read %zd bytes from sd\n", len); */
+		printf("Read %zd bytes from sd\n", len);
 
 		if (!len) {
 			break;
@@ -108,7 +115,36 @@ main(int argc, char *argv[])
 		} else {
 			len = write(fd, buf, len);
 			/* printf("wrote %zd bytes to fd\n", len); */
-			flag++;
+			//flag++;
+			code = std::string(&buf[0], len);
+			if(code.compare("AreYouThere?\n") == 0)
+			{
+				char hostname[1024];
+				char sourceName[INET6_ADDRSTRLEN];
+
+				printf("Now a response with hostname would be sent back!\n");
+				gethostname(&hostname[0], 1024);
+
+				char *s = NULL;
+				switch(p_sockadr->sa_family) {
+				    case AF_INET: {
+				        struct sockaddr_in *addr_in = (struct sockaddr_in *)p_sockadr;
+				        s = (char*)malloc(INET_ADDRSTRLEN);
+				        inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
+				        break;
+				    }
+				    case AF_INET6: {
+				        struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)p_sockadr;
+				        s = (char*)malloc(INET6_ADDRSTRLEN);
+				        inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
+				        break;
+				    }
+				    default:
+				        break;
+				}
+				printf("%s to %s\n", &hostname[0], s);
+				free(s);
+			}
 		}
 	}
 
@@ -116,4 +152,12 @@ main(int argc, char *argv[])
 	close(fd);
 
 	return 0;
+}
+
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET)
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
