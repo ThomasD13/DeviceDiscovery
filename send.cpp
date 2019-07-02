@@ -12,20 +12,32 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string>
 
-int
-main(int argc, char *argv[])
+int sendMulticastDatagram(std::string targetAddress, std::string port, char buf[], int length);
+
+int main(int argc, char *argv[])
 {
-	struct sockaddr_in6 saddr;
-	struct ipv6_mreq mreq;
-	char buf[1400];
-	ssize_t len = 1;
-	int sd, fd, on = 1, hops = 255, ifidx = 0;
-
 	if (argc < 3) {
 		printf("\nUsage: %s <address> <port>\n\nExample: %s ff02::5:6 12345\n\n", argv[0], argv[0]);
 		return 1;
 	}
+
+	std::string message = "AreYouThere?";
+	char buf[message.length()];
+	strcpy(&buf[0], message.c_str());
+	int length = sizeof(buf) / sizeof(char);
+	sendMulticastDatagram(argv[1], argv[2], buf, length);
+
+}
+
+int sendMulticastDatagram(std::string targetAddress, std::string port, char buf[], int length)
+{
+	struct sockaddr_in6 saddr;
+	struct ipv6_mreq mreq;
+	//char buf[1400];
+	//ssize_t len = 1;
+	int sd, fd, on = 1, hops = 255, ifidx = 0;
 
 	sd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
@@ -55,8 +67,8 @@ main(int argc, char *argv[])
 
 	memset(&saddr, 0, sizeof(struct sockaddr_in6));
 	saddr.sin6_family = AF_INET6;
-	saddr.sin6_port = htons(atoi(argv[2]));
-	inet_pton(AF_INET6, argv[1], &saddr.sin6_addr);
+	saddr.sin6_port = htons(atoi(port.c_str()));
+	inet_pton(AF_INET6, targetAddress.c_str(), &saddr.sin6_addr);
 
 	memcpy(&mreq.ipv6mr_multiaddr, &saddr.sin6_addr, sizeof(mreq.ipv6mr_multiaddr));
 	mreq.ipv6mr_interface = ifidx;
@@ -66,26 +78,31 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
+	/*
 	fd = open("/dev/stdin", O_RDONLY, NULL);
 	if (fd < 0) {
 		perror("open");
 		return 1;
 	}
+	*/
 
-	while (len) {
-		len = read(fd, buf, 1400);
-		/* printf("read %zd bytes from fd\n", len); */
-		if (!len) {
-			break;
-		} else if (len < 0) {
-			perror("read");
-			return 1;
-		} else {
-			len = sendto(sd, buf, len, 0, (const struct sockaddr *) &saddr, sizeof(saddr));
-			/* printf("sent %zd bytes to sd\n", len); */
-			usleep(10000); /* rate limit, 10000 = 135 kilobyte/s */
-		}
-	}
+
+//	while (len) {
+//		len = read(fd, buf, 1400);
+//		/* printf("read %zd bytes from fd\n", len); */
+//		if (!len) {
+//			break;
+//		} else if (len < 0) {
+//			perror("read");
+//			return 1;
+//		} else {
+//
+//			/* printf("sent %zd bytes to sd\n", len); */
+//			usleep(10000); /* rate limit, 10000 = 135 kilobyte/s */
+//		}
+//	}
+
+	sendto(sd, buf, length, 0, (const struct sockaddr *) &saddr, sizeof(saddr));
 
 	close(sd);
 	close(fd);
