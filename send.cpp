@@ -23,6 +23,6 @@ int main(int argc, char *argv[])
 	int length = sizeof(buf) / sizeof(char);
 
 	UdpTools sendUdp;// = new UdpTools();
-	//sendUdp.SendUDPDatagram(argv[1], argv[2], buf, length);
+	sendUdp.SendUDPDatagram(true, argv[1], argv[2], buf, length);
 
 }

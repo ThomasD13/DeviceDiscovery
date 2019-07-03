@@ -3,16 +3,16 @@ OBJECTS=$(SOURCES:.cpp=.o)
 DEPS=$(SOURCES:.cpp=.d)
 BINS= send receive
 
-CFLAGS+=-MMD -g
-CXXFLAGS+=-MMD -g
+CFLAGS+=-MMD -g -Wall
+CXXFLAGS+=-MMD -g -Wall
 
 all: $(BINS)
 
 send:
-	g++ $(CFLAGS) UdpTools.cpp UdpTools.h send.cpp
+	g++ -o send $(CFLAGS) UdpTools.cpp UdpTools.h send.cpp
 
 receive: 
-	g++ $(CFLAGS) UdpTools.cpp UdpTools.h receive.cpp
+	g++ -o receive $(CFLAGS) UdpTools.cpp UdpTools.h receive.cpp
 
 .PHONY: clean
 
