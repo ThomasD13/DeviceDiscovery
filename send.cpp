@@ -8,8 +8,6 @@
 #include <string.h>
 #include "UdpTools.h"
 
-int sendMulticastDatagram(std::string targetAddress, std::string port, char buf[], int length);
-
 int main(int argc, char *argv[])
 {
 	if (argc < 3) {
@@ -17,12 +15,45 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	std::string message = "AreYouThere?";
-	char buf[message.length()];
-	strcpy(&buf[0], message.c_str());
-	int length = sizeof(buf) / sizeof(char);
+	if(argc != 3 && argc != 4)
+	{
+		printf("Usage: send address port. Example send ff02::5:6 12345\n");
+		printf("Usage (need be root): send iface-name address port. Example sudo send eth0 ff02::5:6 12345\n");
+		return -1;
+	}
 
-	UdpTools sendUdp;// = new UdpTools();
-	sendUdp.SendUDPDatagram(true, argv[1], argv[2], buf, length);
+	std::string sendAddress = std::string(argv[1]);
+	std::string port = std::string(argv[2]);
+	std::string ifaceName;
+	UdpTools* p_udpSender;
+
+	if(argc == 3)
+	{
+		if(argv[1] == NULL || argv[2] == NULL)
+		{
+			printf("Usage: listen address port. Example receive ff02::5:6 12345\n");
+			return -1;
+		}
+		sendAddress = std::string(argv[1]);
+		port = std::string(argv[2]);
+		p_udpSender = new UdpTools();
+
+	}
+
+	if(argc == 4)
+	{
+		if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL)
+		{
+			printf("Usage: listen iface-name address port. Example receive eth0 ff02::5:6 12345\n");
+			return -1;
+		}
+		ifaceName = std::string(argv[1]);
+		sendAddress = std::string(argv[2]);
+		port = std::string(argv[3]);
+		p_udpSender = new UdpTools(ifaceName);
+	}
+
+	std::string message = "AreYouThere?";
+	p_udpSender->SendUDPDatagram(true, sendAddress, port, message.c_str(), message.length());
 
 }

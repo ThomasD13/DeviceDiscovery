@@ -6,6 +6,7 @@
  */
 #include <string>
 #include <sys/socket.h>
+#include <list>
 
 #ifndef UDPTOOLS_H_
 #define UDPTOOLS_H_
@@ -15,6 +16,7 @@ typedef void (*receiveCallbackFcn)(std::string datagram, sockaddr& sourceAddr);
 class UdpTools {
 public:
 	UdpTools();
+	UdpTools(std::string iface);
 	int SendUDPDatagram(bool useMulticast, std::string targetAddress, std::string port, const char buf[], int length);
 
 
@@ -28,6 +30,10 @@ public:
 
 private:
 	bool stopReceiveThread;
+	std::string specifiedInterface;
+
+	std::list<std::string> getInterfaces();
+	bool bindSocketToInterface(int sd, std::string interfaceName);
 };
 
 #endif /* UDPTOOLS_H_ */

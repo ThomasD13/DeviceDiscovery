@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <net/if.h>
 #include <string>
 #include <cstring>
 #include <arpa/inet.h>
@@ -18,10 +19,42 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <stdexcept>
 
 UdpTools::UdpTools() {
 
 	stopReceiveThread = false;
+	specifiedInterface = "";
+
+}
+
+UdpTools::UdpTools(std::string iface)
+{
+	stopReceiveThread = false;
+	specifiedInterface = iface;
+	std::list<std::string> interfacesOnSystem = getInterfaces();
+	std::list<std::string>::iterator it;
+
+	bool ifacefound = false;
+	for(it = interfacesOnSystem.begin(); it != interfacesOnSystem.end(); it++)
+	{
+		if(it->compare(iface) == 0)
+		{
+			ifacefound = true;
+			break;
+		}
+	}
+
+	if(!ifacefound)
+	{
+		printf("Given interface name %s was not found!\n", iface.c_str());
+		printf("Detected interfaces: ");
+		for(it = interfacesOnSystem.begin(); it != interfacesOnSystem.end(); it++)
+		{
+			printf("\t\t %s\n", it->c_str());
+		}
+		throw std::invalid_argument("Could not detect iface name");
+	}
 
 }
 
@@ -64,6 +97,13 @@ int UdpTools::ReceiveUDPDatagram(std::string listenAddress, std::string listenPo
 	if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &on, sizeof(on))) {
 		perror("setsockopt");
 		return 1;
+	}
+
+	if(!this->specifiedInterface.empty())
+	{
+		bool success = bindSocketToInterface(sd, this->specifiedInterface);
+		if(!success)
+			return 1;
 	}
 
 	memset(&saddr, 0, sizeof(saddr));
@@ -168,6 +208,12 @@ int UdpTools::SendUDPDatagram(bool useMulticast, std::string targetAddress, std:
 		}
 	}
 
+	if(!this->specifiedInterface.empty())
+	{
+		bool success = bindSocketToInterface(sd, this->specifiedInterface);
+		if(!success)
+			return 1;
+	}
 
 	memset(&saddr, 0, sizeof(struct sockaddr_in6));
 	saddr.sin6_family = AF_INET6;
@@ -217,4 +263,43 @@ std::string UdpTools::DecodeSockAddr(sockaddr& sockAddr)
 	std::string ipAddress = std::string(s);
 	free(s);
 	return ipAddress;
+}
+
+std::list<std::string> UdpTools::getInterfaces()
+{
+	std::list<std::string> detectedInterfaces;
+    struct if_nameindex *if_nidxs, *intf;
+
+    if_nidxs = if_nameindex();
+    if ( if_nidxs != NULL )
+    {
+        for (intf = if_nidxs; intf->if_index != 0 || intf->if_name != NULL; intf++)
+        {
+            //printf("%s\n", intf->if_name);
+            detectedInterfaces.push_back(std::string(intf->if_name));
+        }
+
+        if_freenameindex(if_nidxs);
+    }
+    return detectedInterfaces;
+}
+
+bool UdpTools::bindSocketToInterface(int sd, std::string interfaceName)
+{
+	/*Bind socket to a specific interface if set*/
+	struct ifreq ifr;
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), interfaceName.c_str());
+
+	if ((setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr))) < 0)
+	{
+		perror("Server-setsockopt() error for SO_BINDTODEVICE");
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+
+
 }

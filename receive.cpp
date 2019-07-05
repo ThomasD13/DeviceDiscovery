@@ -47,16 +47,46 @@ void ReceiveCallback(std::string datagram, sockaddr& sourceAddr)
 
 int main(int argc, char ** argv)
 {
-	if(argv[1] == NULL || argv[2] == NULL)
+	if(argc != 3 && argc != 4)
+	{
 		printf("Usage: listen address port. Example receive ff02::5:6 12345\n");
+		printf("Usage (need be root): listen iface-name address port. Example sudo receive eth0 ff02::5:6 12345\n");
+		return -1;
+	}
 
 	std::string listenAddress = std::string(argv[1]);
 	std::string port = std::string(argv[2]);
+	std::string ifaceName;
+	UdpTools* p_updReceiver;
 
-	UdpTools udpSender;
+	if(argc == 3)
+	{
+		if(argv[1] == NULL || argv[2] == NULL)
+		{
+			printf("Usage: listen address port. Example receive ff02::5:6 12345\n");
+			return -1;
+		}
+		listenAddress = std::string(argv[1]);
+		port = std::string(argv[2]);
+		p_updReceiver = new UdpTools();
+
+	}
+
+	if(argc == 4)
+	{
+		if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL)
+		{
+			printf("Usage: listen iface-name address port. Example receive eth0 ff02::5:6 12345\n");
+			return -1;
+		}
+		ifaceName = std::string(argv[1]);
+		listenAddress = std::string(argv[2]);
+		port = std::string(argv[3]);
+		p_updReceiver = new UdpTools(ifaceName);
+	}
+
 	receiveCallbackFcn fcn = ReceiveCallback;
-
-	udpSender.ReceiveUDPDatagram(listenAddress, port, fcn);
+	p_updReceiver->ReceiveUDPDatagram(listenAddress, port, fcn);
 }
 
 
