@@ -22,6 +22,8 @@ public:
 
 	void StopReceiveUDPDatagram();
 
+	std::string DecodeSockAddr(sockaddr& sockAddr);
+
 	virtual ~UdpTools();
 
 private:

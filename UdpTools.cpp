@@ -104,11 +104,13 @@ int UdpTools::ReceiveUDPDatagram(std::string listenAddress, std::string listenPo
 				{
 					break;
 				}
+				usleep(1000 * 100);	//Wait 100 ms, lower cpu consumption
 			}
 
 			len = recvfrom(sd, buf, 1400, 0, &p_sockadr, &p_socklength);
 			buf[len] = '\0';
-			printf("Read %zd bytes from sd: %s\n", len, buf);
+			std::string source = this->DecodeSockAddr(p_sockadr);
+			printf("Read %zd bytes from %s: %s\n", len, source.c_str(), buf);
 
 
 			if (!len) {
@@ -117,17 +119,12 @@ int UdpTools::ReceiveUDPDatagram(std::string listenAddress, std::string listenPo
 				perror("read");
 				return 1;
 			} else {
-				//len = write(fd, buf, len);
-				/* printf("wrote %zd bytes to fd\n", len); */
 				std::string code = std::string(&buf[0], len);
-
 				receiveCallback(code, p_sockadr);
 			}
 		}
 
 	close(sd);
-	//close(fd);
-
 	return 0;
 }
 
@@ -140,8 +137,6 @@ int UdpTools::SendUDPDatagram(bool useMulticast, std::string targetAddress, std:
 {
 	struct sockaddr_in6 saddr;
 	struct ipv6_mreq mreq;
-	//char buf[1400];
-	//ssize_t len = 1;
 	int sd, on = 1, hops = 255, ifidx = 0;
 
 	sd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
@@ -190,35 +185,36 @@ int UdpTools::SendUDPDatagram(bool useMulticast, std::string targetAddress, std:
 		}
 	}
 
-
-	/*
-	fd = open("/dev/stdin", O_RDONLY, NULL);
-	if (fd < 0) {
-		perror("open");
-		return 1;
-	}
-	*/
-
-
-	//	while (len) {
-	//		len = read(fd, buf, 1400);
-	//		/* printf("read %zd bytes from fd\n", len); */
-	//		if (!len) {
-	//			break;
-	//		} else if (len < 0) {
-	//			perror("read");
-	//			return 1;
-	//		} else {
-	//
-	//			/* printf("sent %zd bytes to sd\n", len); */
-	//			usleep(10000); /* rate limit, 10000 = 135 kilobyte/s */
-	//		}
-	//	}
-
 	sendto(sd, buf, length, 0, (const struct sockaddr *) &saddr, sizeof(saddr));
 
 	close(sd);
-	//close(fd);
-
 	return 0;
+}
+
+
+std::string UdpTools::DecodeSockAddr(sockaddr& sockAddr)
+{
+	char *s = NULL;
+	std::string defaultCase = "CouldNotDecodeIP";
+
+	switch(sockAddr.sa_family) {
+		case AF_INET: {
+			struct sockaddr_in *addr_in = (struct sockaddr_in *)&sockAddr;
+			s = (char*)malloc(INET_ADDRSTRLEN);
+			inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
+			break;
+		}
+		case AF_INET6: {
+			struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&sockAddr;
+			s = (char*)malloc(INET6_ADDRSTRLEN);
+			inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
+			break;
+		}
+		default:
+			s = (char*)defaultCase.c_str();
+	}
+
+	std::string ipAddress = std::string(s);
+	free(s);
+	return ipAddress;
 }

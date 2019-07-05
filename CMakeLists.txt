@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (DeviceDiscovery)
+set(CMAKE_BUILD_TYPE Debug)
 add_executable(receive receive.cpp UdpTools)
 add_executable(send send.cpp UdpTools)
 install (TARGETS receive DESTINATION bin)
