@@ -75,27 +75,28 @@ int UdpTools::ReceiveUDPDatagram(std::string listenAddress, std::string listenPo
 
 	sd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
-		perror("socket");
+		perror("create socket");
 		return 1;
 	}
 
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) {
-		perror("setsockopt");
+		perror("setsockopt reuse addr");
 		return 1;
 	}
 
+	//TODO: This seems to make problems on devices with multiple interfaces
 	if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifidx, sizeof(ifidx))) {
-		perror("setsockopt");
+		perror("setsockopt multicast interface");
 		return 1;
 	}
 
 	if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops))) {
-		perror("setsockopt");
+		perror("setsockopt multicast hops");
 		return 1;
 	}
 
 	if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &on, sizeof(on))) {
-		perror("setsockopt");
+		perror("setsockopt multicast loop");
 		return 1;
 	}
 
@@ -123,7 +124,7 @@ int UdpTools::ReceiveUDPDatagram(std::string listenAddress, std::string listenPo
 	mreq.ipv6mr_interface = ifidx;
 
 	if (setsockopt(sd, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *) &mreq, sizeof(mreq))) {
-		perror("setsockopt");
+		perror("setsockopt join group");
 		return 1;
 	}
 
@@ -181,29 +182,30 @@ int UdpTools::SendUDPDatagram(bool useMulticast, std::string targetAddress, std:
 
 	sd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
-		perror("socket");
+		perror("create socket");
 		return 1;
 	}
 
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) {
-		perror("setsockopt");
+		perror("setsockopt reuse addr");
 		return 1;
 	}
 
 	if(useMulticast)
 	{
+		//TODO This ifidx seems to make problems on devices with multiple interfaces
 		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifidx, sizeof(ifidx))) {
-			perror("setsockopt");
+			perror("setsockopt multicast interface");
 			return 1;
 		}
 
 		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops))) {
-			perror("setsockopt");
+			perror("setsockopt multicast hops");
 			return 1;
 		}
 
 		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &on, sizeof(on))) {
-			perror("setsockopt");
+			perror("setsockopt multicast loop");
 			return 1;
 		}
 	}
@@ -226,7 +228,7 @@ int UdpTools::SendUDPDatagram(bool useMulticast, std::string targetAddress, std:
 		mreq.ipv6mr_interface = ifidx;
 
 		if (setsockopt(sd, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *) &mreq, sizeof(mreq))) {
-			perror("setsockopt");
+			perror("setsockopt join group");
 			return 1;
 		}
 	}
