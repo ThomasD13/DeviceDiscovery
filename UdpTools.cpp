@@ -199,6 +199,8 @@ int UdpTools::SendUDPDatagram(bool useMulticast, std::string targetAddress, std:
 			return 1;
 		}
 
+		//CAUTION: Setting TTL to 255 is DANGEROUS for multicast packets. (In case of leaving
+		// the "broadcast domain / link local network"
 		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops))) {
 			perror("setsockopt multicast hops");
 			return 1;
