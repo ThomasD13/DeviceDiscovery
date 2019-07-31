@@ -293,7 +293,7 @@ bool UdpTools::bindSocketToInterface(int sd, std::string interfaceName)
 	/*Bind socket to a specific interface if set*/
 	struct ifreq ifr;
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, sizeof(ifr.ifr_name), interfaceName.c_str());
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", interfaceName.c_str());
 
 	if ((setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr))) < 0)
 	{
